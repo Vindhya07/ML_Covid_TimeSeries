@@ -284,6 +284,78 @@ def train_predict_Lasso(q_step, stride, lag, dd):
 rmse_lasso_200 = train_predict_Lasso(200, 1, 2, 1)
 print("RMSE lasso 200:", rmse_lasso_200)
 
+
+
+
+
+
+
+def train_predict_Dummy(q_step, stride, lag, dd):
+  # stride = stride
+  # lag = lag #determines the feature vector size
+  # dd = dd #number of samples in a day
+  q = 1
+  ss = og_ss
+  og_tt = t_full[lag*dd+q::stride]
+  day_sec = 86400000000000
+  for j in range(0,q_step*day_sec, day_sec):
+    XX = ss[0:ss.size - q - lag * dd:stride]
+    for i in range(1,lag):
+      X = ss[i*dd:ss.size - q - (lag-i)*dd:stride]
+      XX = np.column_stack((XX,X))
+    # print(XX.size) #will be size = lag * X_size
+    yy = ss[lag*dd+q::stride] #size of XX before column stacking
+    # print("SS:",ss.size)
+    # print("yy:",yy.size)
+    tt = t_full[lag*dd+q::stride]
+    # print(tt.size)
+    from sklearn.model_selection import train_test_split
+    train, test = train_test_split(np.arange(0,yy.size),test_size=0.2)
+
+    from sklearn.dummy import DummyRegressor
+    model = DummyRegressor().fit(XX[train], yy[train])
+    # print(model.intercept_, model.coef_)
+
+    y_pred = model.predict(XX)
+    yp = y_pred[y_pred.size-1]
+    ss = np.append(ss, yp)
+    np.append(tt, tt[tt.size-1] + day_sec)
+    # print("tt:",tt.size)
+    # print("XX:" ,XX.size)
+
+  y_pred_2 = model.predict(XX)
+  # print("tfull:",t_full)
+  tt_full2 = np.arange(t_full[t_full.size-1], t_full[t_full.size-1] + q_step*day_sec, day_sec)
+  pred_num = tt_full2.size
+  # print("ttfull2:",tt_full2)
+  plt.rcParams["figure.figsize"] = (25,10)
+  plt.plot(t_full, og_ss, color='black')
+  t_full_dates = pd.to_datetime(tt_full2)
+  # print(t_full_dates)
+  plt.plot(tt_full2, y_pred_2[:q_step], color='blue')
+  plt.xticks(tt_full2, labels=t_full_dates)
+  plt.show()
+  plt.plot(tt_full2, y_pred_2[:q_step], color='blue')
+  plt.xticks(tt_full2, labels=t_full_dates)
+  plt.show()
+
+  from sklearn.metrics import mean_squared_error
+  mse = mean_squared_error(yy, y_pred_2)
+  rmse = math.sqrt(mse)
+  return rmse
+
+rmse_dummy_200 = train_predict_Dummy(200, 1, 2, 1)
+print("RMSE dummy 200:", rmse_dummy_200)
+
+
+
+
+
+
+
+
+
+
 def train_predict_LR(q_step, stride, lag, dd):
   # stride = stride
   # lag = lag #determines the feature vector size
